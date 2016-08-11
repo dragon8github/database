@@ -9,11 +9,43 @@
  Target Server Version : 50714
  File Encoding         : utf-8
 
- Date: 08/12/2016 00:09:53 AM
+ Date: 08/12/2016 01:28:46 AM
 */
 
 SET NAMES utf8;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+--  Table structure for `prod_class`
+-- ----------------------------
+DROP TABLE IF EXISTS `prod_class`;
+CREATE TABLE `prod_class` (
+	`prod_classid` int(11) NOT NULL AUTO_INCREMENT,
+	`prod_classname` varchar(50) NOT NULL,
+	`prod_pclassid` int(11) NOT NULL,
+	PRIMARY KEY (`prod_classid`)
+) ENGINE=`MyISAM` AUTO_INCREMENT=1 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
+
+-- ----------------------------
+--  Table structure for `prod_click_log`
+-- ----------------------------
+DROP TABLE IF EXISTS `prod_click_log`;
+CREATE TABLE `prod_click_log` (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
+	`prod_id` int(11) NOT NULL,
+	`user_ip` varchar(20) NOT NULL,
+	`user_id` int(11) NOT NULL,
+	`clickdate` date DEFAULT NULL,
+	`clicknum` int(11) NOT NULL DEFAULT '1',
+	PRIMARY KEY (`id`)
+) ENGINE=`MyISAM` AUTO_INCREMENT=5 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
+
+-- ----------------------------
+--  Records of `prod_click_log`
+-- ----------------------------
+BEGIN;
+INSERT INTO `prod_click_log` VALUES ('3', '1', '192.168.1.1', '1', '2016-08-12', '3'), ('4', '2', '192.168.1.1', '1', '2016-08-12', '1');
+COMMIT;
 
 -- ----------------------------
 --  Table structure for `prod_main`
@@ -26,14 +58,20 @@ CREATE TABLE `prod_main` (
 	`prod_intr` text NOT NULL,
 	`prod_adddate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`prod_lastdate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`prod_click_all` int(11) NOT NULL DEFAULT '0',
+	`prod_click_month` int(11) NOT NULL DEFAULT '0',
+	`prod_sale_all` int(11) NOT NULL DEFAULT '0',
+	`prod_sale_month` int(11) NOT NULL DEFAULT '0',
+	`prod_rate_all` int(11) NOT NULL DEFAULT '0',
+	`prod_rate_month` int(11) NOT NULL DEFAULT '0',
 	PRIMARY KEY (`prod_id`)
-) ENGINE=`MyISAM` AUTO_INCREMENT=2 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
+) ENGINE=`MyISAM` AUTO_INCREMENT=3 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
 
 -- ----------------------------
 --  Records of `prod_main`
 -- ----------------------------
 BEGIN;
-INSERT INTO `prod_main` VALUES ('1', 'python 黑帽子', '1', 'python 黑帽子 教程', '2016-08-12 00:02:14', '2016-08-12 00:02:14');
+INSERT INTO `prod_main` VALUES ('1', 'python 黑帽子', '1', 'python 黑帽子 教程', '2016-08-12 00:02:14', '2016-08-12 00:02:14', '3', '0', '0', '0', '0', '0'), ('2', 'mysql 权威指南', '1', 'mysql 权威指南 简介', '2016-08-12 01:20:13', '2016-08-12 01:20:13', '1', '0', '0', '0', '0', '0');
 COMMIT;
 
 -- ----------------------------
@@ -59,6 +97,81 @@ WHILE @NUM < 10000000 DO
 
 END WHILE;
     
+END
+ ;;
+delimiter ;
+
+-- ----------------------------
+--  Procedure structure for `sp_load_prod`
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `sp_load_prod`;
+delimiter ;;
+CREATE DEFINER = `root`@`localhost` PROCEDURE `sp_load_prod`(IN _prod_id int,IN _user_ip varchar(15),in _user_id int)
+LANGUAGE SQL
+NOT DETERMINISTIC
+CONTAINS SQL
+SQL SECURITY DEFINER
+COMMENT ''
+BEGIN
+
+SET @num = 0;
+SET @count = 0;
+SELECT * FROM prod_main where prod_id = _prod_id limit 1;
+SET @num = FOUND_ROWS();
+if @num = 1 THEN
+SELECT COUNT(*) into @count FROM prod_click_log where
+prod_id = _prod_id AND 
+user_id = _user_id AND
+user_ip = _user_ip AND
+clickdate = CURRENT_DATE;
+if @count > 0 then
+
+	UPDATE prod_click_log set clicknum = clicknum + 1 where
+	prod_id = _prod_id AND 
+	user_id = _user_id AND
+	user_ip = _user_ip AND
+	clickdate = CURRENT_DATE;
+
+ELSE
+	insert into `test`.`prod_click_log` ( `prod_id`,`user_ip` ,`user_id`,`clickdate`)
+	values (_prod_id,_user_ip,_user_id,CURRENT_DATE);
+	end if;
+end if;
+
+
+END
+ ;;
+delimiter ;
+
+-- ----------------------------
+--  Procedure structure for `sp_update_click`
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `sp_update_click`;
+delimiter ;;
+CREATE DEFINER = `root`@`localhost` PROCEDURE `sp_update_click`()
+LANGUAGE SQL
+NOT DETERMINISTIC
+CONTAINS SQL
+SQL SECURITY DEFINER
+COMMENT ''
+BEGIN
+DECLARE is_end int default 0;
+DECLARE pid int;
+DECLARE cnum int;
+DECLARE cur CURSOR FOR SELECT prod_id,sum(clicknum) from prod_click_log group by prod_id;
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET is_end = 1;
+open cur;
+fetch cur into pid,cnum;
+
+while is_end != 1 do
+
+ update prod_main set prod_click_all = cnum where prod_id = pid;
+
+ fetch cur into pid,cnum;
+
+end while;
+
+
 END
  ;;
 delimiter ;
