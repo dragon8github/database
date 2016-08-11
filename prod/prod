@@ -1,0 +1,66 @@
+/*
+ Navicat MySQL Data Transfer
+
+ Source Server         : localhost
+ Source Server Version : 50714
+ Source Host           : localhost
+ Source Database       : test
+
+ Target Server Version : 50714
+ File Encoding         : utf-8
+
+ Date: 08/12/2016 00:09:53 AM
+*/
+
+SET NAMES utf8;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+--  Table structure for `prod_main`
+-- ----------------------------
+DROP TABLE IF EXISTS `prod_main`;
+CREATE TABLE `prod_main` (
+	`prod_id` int(50) NOT NULL AUTO_INCREMENT,
+	`prod_name` varchar(50) NOT NULL,
+	`prod_classid` int(11) NOT NULL,
+	`prod_intr` text NOT NULL,
+	`prod_adddate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`prod_lastdate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (`prod_id`)
+) ENGINE=`MyISAM` AUTO_INCREMENT=2 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
+
+-- ----------------------------
+--  Records of `prod_main`
+-- ----------------------------
+BEGIN;
+INSERT INTO `prod_main` VALUES ('1', 'python 黑帽子', '1', 'python 黑帽子 教程', '2016-08-12 00:02:14', '2016-08-12 00:02:14');
+COMMIT;
+
+-- ----------------------------
+--  Procedure structure for `sp_ctd`
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `sp_ctd`;
+delimiter ;;
+CREATE DEFINER = `root`@`localhost` PROCEDURE `sp_ctd`()
+LANGUAGE SQL
+NOT DETERMINISTIC
+CONTAINS SQL
+SQL SECURITY DEFINER
+COMMENT ''
+BEGIN
+
+SET @NUM = 1;
+
+WHILE @NUM < 10000000 DO
+
+    INSERT INTO TEST_1 (user_name,user_pwd) VALUES (CONCAT('USER',@NUM),'123');
+
+    SET @NUM = @NUM + 1;
+
+END WHILE;
+    
+END
+ ;;
+delimiter ;
+
+SET FOREIGN_KEY_CHECKS = 1;
