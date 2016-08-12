@@ -9,11 +9,28 @@
  Target Server Version : 50714
  File Encoding         : utf-8
 
- Date: 08/12/2016 01:28:46 AM
+ Date: 08/12/2016 22:08:33 PM
 */
 
 SET NAMES utf8;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+--  Table structure for `prod_attr`
+-- ----------------------------
+DROP TABLE IF EXISTS `prod_attr`;
+CREATE TABLE `prod_attr` (
+	`prod_id` int(11) NOT NULL,
+	`attr_id` int(11) NOT NULL,
+	`attr_value` varchar(50) NOT NULL
+) ENGINE=`MyISAM` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
+
+-- ----------------------------
+--  Records of `prod_attr`
+-- ----------------------------
+BEGIN;
+INSERT INTO `prod_attr` VALUES ('1', '1', '清华出版社'), ('2', '1', '人民出版社'), ('2', '2', '李钊鸿'), ('3', '1', '中国出版社'), ('3', '2', '刘勇'), ('4', '1', '中国出版社'), ('4', '2', '刘勇');
+COMMIT;
 
 -- ----------------------------
 --  Table structure for `prod_class`
@@ -25,6 +42,26 @@ CREATE TABLE `prod_class` (
 	`prod_pclassid` int(11) NOT NULL,
 	PRIMARY KEY (`prod_classid`)
 ) ENGINE=`MyISAM` AUTO_INCREMENT=1 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
+
+-- ----------------------------
+--  Table structure for `prod_class_attr`
+-- ----------------------------
+DROP TABLE IF EXISTS `prod_class_attr`;
+CREATE TABLE `prod_class_attr` (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
+	`attr_name` varchar(50) NOT NULL,
+	`attr_note` varchar(50) NOT NULL,
+	`attr_pid` int(11) NOT NULL DEFAULT '0',
+	`prod_classid` int(11) NOT NULL,
+	PRIMARY KEY (`id`)
+) ENGINE=`MyISAM` AUTO_INCREMENT=9 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
+
+-- ----------------------------
+--  Records of `prod_class_attr`
+-- ----------------------------
+BEGIN;
+INSERT INTO `prod_class_attr` VALUES ('1', 'press', '出版社', '0', '1'), ('2', 'author', '作者', '0', '1'), ('3', 'format', '开本', '0', '1'), ('4', 'pressdate', '出版时间', '0', '1'), ('5', 'technics', '工艺', '0', '2'), ('6', 'style', '风格', '0', '2'), ('7', 'target', '适用对象', '0', '2'), ('8', 'material', '材质', '0', '2');
+COMMIT;
 
 -- ----------------------------
 --  Table structure for `prod_click_log`
@@ -55,7 +92,7 @@ CREATE TABLE `prod_main` (
 	`prod_id` int(50) NOT NULL AUTO_INCREMENT,
 	`prod_name` varchar(50) NOT NULL,
 	`prod_classid` int(11) NOT NULL,
-	`prod_intr` text NOT NULL,
+	`prod_intr` text DEFAULT NULL,
 	`prod_adddate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`prod_lastdate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`prod_click_all` int(11) NOT NULL DEFAULT '0',
@@ -65,13 +102,13 @@ CREATE TABLE `prod_main` (
 	`prod_rate_all` int(11) NOT NULL DEFAULT '0',
 	`prod_rate_month` int(11) NOT NULL DEFAULT '0',
 	PRIMARY KEY (`prod_id`)
-) ENGINE=`MyISAM` AUTO_INCREMENT=3 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
+) ENGINE=`MyISAM` AUTO_INCREMENT=5 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ROW_FORMAT=DYNAMIC CHECKSUM=0 DELAY_KEY_WRITE=0;
 
 -- ----------------------------
 --  Records of `prod_main`
 -- ----------------------------
 BEGIN;
-INSERT INTO `prod_main` VALUES ('1', 'python 黑帽子', '1', 'python 黑帽子 教程', '2016-08-12 00:02:14', '2016-08-12 00:02:14', '3', '0', '0', '0', '0', '0'), ('2', 'mysql 权威指南', '1', 'mysql 权威指南 简介', '2016-08-12 01:20:13', '2016-08-12 01:20:13', '1', '0', '0', '0', '0', '0');
+INSERT INTO `prod_main` VALUES ('1', 'python 黑帽子', '1', 'python 黑帽子 教程', '2016-08-12 00:02:14', '2016-08-12 00:02:14', '3', '0', '0', '0', '0', '0'), ('2', 'mysql 权威指南', '1', 'mysql 权威指南 简介', '2016-08-12 01:20:13', '2016-08-12 01:20:13', '1', '0', '0', '0', '0', '0'), ('3', '测试商品', '1', null, '2016-08-12 22:07:13', '2016-08-12 22:07:13', '0', '0', '0', '0', '0', '0'), ('4', '测试商品', '1', null, '2016-08-12 22:07:35', '2016-08-12 22:07:35', '0', '0', '0', '0', '0', '0');
 COMMIT;
 
 -- ----------------------------
@@ -140,6 +177,32 @@ end if;
 
 
 END
+ ;;
+delimiter ;
+
+-- ----------------------------
+--  Procedure structure for `sp_new_prod`
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `sp_new_prod`;
+delimiter ;;
+CREATE DEFINER = `root`@`localhost` PROCEDURE `sp_new_prod`(IN _prod_classid int,IN _prod_name varchar(50),IN _attr_sql text)
+LANGUAGE SQL
+NOT DETERMINISTIC
+CONTAINS SQL
+SQL SECURITY DEFINER
+COMMENT ''
+begin
+insert into `test`.`prod_main` ( `prod_classid`, `prod_name`) values 
+(_prod_classid,_prod_name);
+
+set @pid = LAST_INSERT_ID();
+#insert into prod_attr select 1 as prod_id,a.* from (select 1 as attr_id, '中国出版社' as attr_value UNION select 2 as attr_id, '刘勇' as attr_value) as a
+set @ss = CONCAT('insert into prod_attr select ? as prod_id,a.* from (',_attr_sql,' ) as a');
+PREPARE pname from @ss;
+EXECUTE pname using @pid; #赋值给？
+DEALLOCATE PREPARE pname;
+
+end
  ;;
 delimiter ;
 
